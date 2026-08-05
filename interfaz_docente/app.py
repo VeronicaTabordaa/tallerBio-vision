@@ -18,7 +18,7 @@ rol = st.sidebar.radio("Seleccione su rol:", ["Docente (Carga de Datos)", "CIC (
 # PANTALLA 1: DOCENTE
 # -----------------------------------------
 if rol == "Docente (Carga de Datos)":
-    st.title("👁️ Tamizaje Visual Escolar")
+    st.title("👁️ Salud Visual Escolar")
     st.write("Ingrese los datos del alumno y los resultados del test de Snellen.")
 
     with st.form("formulario_triaje"):
