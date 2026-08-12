@@ -4,16 +4,10 @@ import os
 from datetime import datetime
 
 # Configuración de la página
-st.set_page_config(page_title="Visión de Futuro", layout="centered")
 st.set_page_config(page_title="Visión de Futuro", layout="wide")
 
-# Nombre del archivo que funcionará como nuestra base de datos local
-ARCHIVO_DATOS = "registros_triaje.csv"
 ARCHIVO_DATOS = "registros_triaje_completo.csv"
 
-# Menú lateral para cambiar entre Docente y Oftalmólogo
-st.sidebar.title("Navegación")
-rol = st.sidebar.radio("Seleccione su rol:", ["Docente (Carga de Datos)", "CIC (Panel Oftalmólogo)"])
 # --- 1. MANEJO DE SESIÓN E INICIALIZACIÓN ---
 if "conectado" not in st.session_state:
     st.session_state.conectado = False
@@ -22,12 +16,6 @@ if "rol" not in st.session_state:
 if "form_key" not in st.session_state:
     st.session_state.form_key = 1
 
-# -----------------------------------------
-# PANTALLA 1: DOCENTE
-# -----------------------------------------
-if rol == "Docente (Carga de Datos)":
-    st.title("👁️ Salud Visual Escolar")
-    st.write("Ingrese los datos del alumno y los resultados del test de Snellen.")
 # --- 2. CARTEL EMERGENTE (MODAL) ---
 @st.dialog("✅ Carga Exitosa")
 def mostrar_cartel_resultado(estado_triaje, agudeza):
@@ -41,9 +29,6 @@ def mostrar_cartel_resultado(estado_triaje, agudeza):
     if st.button("OK - Cargar nuevo alumno", type="primary", use_container_width=True):
         st.rerun()
 
-    with st.form("formulario_triaje"):
-        nombre = st.text_input("Nombre y Apellido del Alumno:")
-        dni = st.text_input("DNI:")
 # --- 3. PANTALLA DE INICIO DE SESIÓN ---
 if not st.session_state.conectado:
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -51,22 +36,11 @@ if not st.session_state.conectado:
     with col2:
         st.title("🔐 Acceso al Sistema")
         st.markdown("Plataforma **Visión de Futuro**")
-
-        st.write("**Agudeza Visual (Valores del 1 al 10)**")
-        col1, col2 = st.columns(2)
-        with col1:
-            av_od = st.number_input("Ojo Derecho (OD):", min_value=1, max_value=10, value=10)
-        with col2:
-            av_oi = st.number_input("Ojo Izquierdo (OI):", min_value=1, max_value=10, value=10)
+        
         tipo_perfil = st.selectbox("Seleccione su perfil de ingreso:", ["Docente", "Personal del CIC"])
         usuario = st.text_input("Usuario:")
         contrasena = st.text_input("Contraseña:", type="password")
-
-        enviado = st.form_submit_button("Guardar y Evaluar")
-
-        if enviado:
-            if nombre == "" or dni == "":
-                st.warning("Por favor, complete todos los campos.")
+        
         if st.button("Iniciar Sesión", use_container_width=True):
             if tipo_perfil == "Docente" and usuario == "docente" and contrasena == "1234":
                 st.session_state.conectado = True
@@ -77,29 +51,6 @@ if not st.session_state.conectado:
                 st.session_state.rol = "CIC"
                 st.rerun()
             else:
-                # 1. ALGORITMO DE TRIAJE
-                peor_vision = min(av_od, av_oi)
-                
-                if peor_vision <= 7:
-                    estado = "Caso Sospechoso - Derivar"
-                    st.error(f"⚠️ Resultado: {estado}")
-                else:
-                    estado = "Visión Normal"
-                    st.success(f"✅ Resultado: {estado}")
-                
-                # 2. GUARDAR LOS DATOS
-                nuevo_dato = pd.DataFrame([{
-                    "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "Nombre": nombre,
-                    "DNI": dni,
-                    "AV_OD": av_od,
-                    "AV_OI": av_oi,
-                    "Resultado": estado
-                }])
-
-                # Si el archivo no existe lo crea con encabezados, si existe agrega la fila
-                if not os.path.isfile(ARCHIVO_DATOS):
-                    nuevo_dato.to_csv(ARCHIVO_DATOS, index=False)
                 st.error("⚠️ Usuario o contraseña incorrectos. Verifique sus datos.")
         
         st.divider()
@@ -171,18 +122,6 @@ else:
                 if nombre == "" or apellido == "" or dni == "":
                     st.warning("⚠️ Por favor, complete al menos Nombre, Apellido y DNI.")
                 else:
-                    nuevo_dato.to_csv(ARCHIVO_DATOS, mode='a', header=False, index=False)
-
-# -----------------------------------------
-# PANTALLA 2: OFTALMÓLOGO (CIC)
-# -----------------------------------------
-elif rol == "CIC (Panel Oftalmólogo)":
-    st.title("🏥 Panel de Gestión - CIC")
-    st.write("Listado de alumnos evaluados en las escuelas.")
-
-    if os.path.isfile(ARCHIVO_DATOS):
-        # Leer los datos guardados
-        df = pd.read_csv(ARCHIVO_DATOS)
                     # --- NUEVA VALIDACIÓN: BLOQUEO DE DUPLICADOS CON DERIVACIÓN ---
                     carga_permitida = True
                     if os.path.isfile(ARCHIVO_DATOS):
@@ -247,10 +186,7 @@ elif rol == "CIC (Panel Oftalmólogo)":
     elif st.session_state.rol == "CIC":
         st.title("🏥 Panel de Gestión y Derivaciones - CIC")
         st.write("Visualización de planillas digitalizadas y priorización de casos.")
-
-        # Mostrar métricas rápidas
-        casos_sospechosos = len(df[df["Resultado"] == "Caso Sospechoso - Derivar"])
-        st.metric(label="Casos que requieren derivación", value=casos_sospechosos)
+        
         if os.path.isfile(ARCHIVO_DATOS):
             df = pd.read_csv(ARCHIVO_DATOS)
             
@@ -261,11 +197,6 @@ elif rol == "CIC (Panel Oftalmólogo)":
             casos_sospechosos = len(df[df["Estado_Triaje"] == "🔴 Caso Sospechoso - Derivar"])
             usan_anteojos = len(df[df["Usa_Anteojos"] == "SI"])
 
-        # Mostrar la tabla completa
-        st.dataframe(df, use_container_width=True)
-    else:
-        st.info("Aún no hay registros cargados por los docentes.")
-        
             col1.metric("Total Evaluados", total_evaluados)
             col2.metric("Casos a Derivar", casos_sospechosos)
             col3.metric("Uso de Anteojos", usan_anteojos)
