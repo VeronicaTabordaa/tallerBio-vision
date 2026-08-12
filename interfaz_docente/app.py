@@ -66,6 +66,10 @@ if not st.session_state.conectado:
                 st.rerun()
             else:
                 st.error("⚠️ Usuario o contraseña incorrectos. Verifique sus datos.")
+        
+        # --- AQUÍ ESTÁ EL CARTEL RESTAURADO ---
+        st.divider()
+        st.info("💡 **Datos de acceso para presentar el proyecto:**\n- **Docente:** Usuario: `docente` | Clave: `1234`\n- **CIC:** Usuario: `cic` | Clave: `admin`")
 
 # --- 4. SISTEMA PRINCIPAL ---
 else:
@@ -91,7 +95,7 @@ else:
                 nombre = st.text_input("Nombre:")
                 dni = st.text_input("DNI:")
                 fecha_nac = st.date_input("Fecha de Nac:", format="DD/MM/YYYY")
-                escuela = st.text_input("Institución Escolar:") # Nuevo campo para estadística
+                escuela = st.text_input("Institución Escolar:")
             with col2:
                 apellido = st.text_input("Apellido:")
                 edad = st.number_input("Edad:", min_value=4, max_value=20, value=6, step=1)
@@ -129,7 +133,6 @@ else:
             if enviado:
                 if nombre == "" or apellido == "" or dni == "" or escuela == "":
                     st.warning("⚠️ Por favor, complete Nombre, Apellido, DNI y Escuela.")
-                    # Telemetría: Sumamos un error operativo
                     st.session_state.errores_carga += 1 
                 else:
                     carga_permitida = True
@@ -143,21 +146,16 @@ else:
                     if not carga_permitida:
                         st.error("⛔ Operación denegada: Este alumno ya tiene una derivación pendiente.")
                     else:
-                        # --- CÁLCULO DE TELEMETRÍA ---
                         tiempo_total_segundos = round(time.time() - st.session_state.tiempo_inicio, 1)
                         errores_cometidos = st.session_state.errores_carga
-                        
-                        # --- GENERACIÓN DE ID ÚNICO ---
-                        id_registro = str(uuid.uuid4())[:8] # Genera un código aleatorio (ej: "4a2b9c1f")
+                        id_registro = str(uuid.uuid4())[:8]
 
-                        # --- LÓGICA DE TRIAJE ---
                         valores_testeados = [v for v in [od_sc, oi_sc, od_cc, oi_cc] if v > 0]
                         if len(valores_testeados) == 0: valores_testeados = [10]
                         peor_vision = min(valores_testeados)
 
                         estado = "🔴 Caso Sospechoso - Derivar" if peor_vision <= 7 else "🟢 Visión Normal"
 
-                        # --- GUARDADO 1: DATOS SENSIBLES (IDENTIFICATORIOS) ---
                         dato_sensible = pd.DataFrame([{
                             "ID_Registro": id_registro,
                             "Nombre": nombre,
@@ -168,7 +166,6 @@ else:
                             "Estado_Triaje": estado
                         }])
                         
-                        # --- GUARDADO 2: DATOS ESTADÍSTICOS (ANÓNIMOS) ---
                         dato_estadistico = pd.DataFrame([{
                             "ID_Registro": id_registro,
                             "Fecha Carga": datetime.now().strftime("%d/%m/%Y"),
@@ -182,14 +179,12 @@ else:
                             "Estado_Triaje": estado
                         }])
                         
-                        # --- GUARDADO 3: TELEMETRÍA ---
                         dato_telemetria = pd.DataFrame([{
                             "ID_Registro": id_registro,
                             "Tiempo_Carga_Segundos": tiempo_total_segundos,
                             "Errores_Operativos": errores_cometidos
                         }])
 
-                        # Funciones para guardar en CSV
                         def guardar_csv(df, archivo):
                             if not os.path.isfile(archivo):
                                 df.to_csv(archivo, index=False)
@@ -200,7 +195,6 @@ else:
                         guardar_csv(dato_estadistico, ARCHIVO_ESTADISTICO)
                         guardar_csv(dato_telemetria, ARCHIVO_TELEMETRIA)
 
-                        # Reiniciamos las variables para el próximo alumno
                         st.session_state.form_key += 1
                         st.session_state.tiempo_inicio = time.time()
                         st.session_state.errores_carga = 0
@@ -214,11 +208,9 @@ else:
         st.title("🏥 Panel de Gestión - CIC (Acceso Restringido)")
         
         if os.path.isfile(ARCHIVO_SENSIBLE) and os.path.isfile(ARCHIVO_ESTADISTICO):
-            # Leemos las bases de datos separadas
             df_sensible = pd.read_csv(ARCHIVO_SENSIBLE)
             df_estadistico = pd.read_csv(ARCHIVO_ESTADISTICO)
             
-            # El sistema del CIC "cruza" internamente la información usando el ID único para que el oftalmólogo vea todo
             df_completo = pd.merge(df_sensible, df_estadistico, on=["ID_Registro", "Estado_Triaje"])
             
             st.subheader("Métricas Generales")
@@ -231,12 +223,10 @@ else:
             st.subheader("Base de Datos Consolidada (Confidencial)")
             st.dataframe(df_completo.sort_values(by="Estado_Triaje"), use_container_width=True)
             
-            # Muestra de la tabla anónima para ejemplificar en la presentación
             with st.expander("Ver Base de Datos Estadística (Lo que se usaría para informes epidemiológicos)"):
                 st.write("Esta tabla no contiene Nombres ni DNI. Se vincula mediante el `ID_Registro`.")
                 st.dataframe(df_estadistico)
                 
-            # Muestra de la tabla de telemetría
             if os.path.isfile(ARCHIVO_TELEMETRIA):
                 with st.expander("Ver Resultados de Telemetría (Rendimiento UX/UI)"):
                     df_telemetria = pd.read_csv(ARCHIVO_TELEMETRIA)
