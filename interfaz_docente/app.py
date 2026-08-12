@@ -127,6 +127,15 @@ else:
                 consulta_previa = st.radio("Consultó Anteriormente con un Oftalmólogo:", ["SI", "NO"], index=1)
             with col_ant2:
                 usa_anteojos = st.radio("Usa Anteojos:", ["SI", "NO"], index=1)
+            col_ant1, col_ant2 = st.columns(2)
+            with col_ant1:
+                consulta_previa = st.radio("Consultó Anteriormente con un Oftalmólogo:", ["SI", "NO"], index=1)
+            with col_ant2:
+                usa_anteojos = st.radio("Usa Anteojos:", ["SI", "NO"], index=1)
+
+            observaciones = st.text_area("Observaciones:")
+
+            enviado = st.form_submit_button("Guardar y Evaluar")
 
             enviado = st.form_submit_button("Guardar y Evaluar")
 
@@ -176,6 +185,8 @@ else:
                             "OD_ConCorrec": od_cc,
                             "OI_ConCorrec": oi_cc,
                             "Usa_Anteojos": usa_anteojos,
+                            "Consulta_Previa": consulta_previa,
+                            "Observaciones": observaciones,
                             "Estado_Triaje": estado
                         }])
                         
