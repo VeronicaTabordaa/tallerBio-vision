@@ -223,46 +223,39 @@ else:
                         # Llamamos al cartel sin pasarle los datos de telemetría para que no los muestre
                         mostrar_cartel_resultado(estado, peor_vision)
 
-    # -----------------------------------------
+# -----------------------------------------
     # VISTA OFTALMÓLOGO (CIC)
     # -----------------------------------------
     elif st.session_state.rol == "CIC":
-        st.title("🏥 Panel de Gestión y Derivaciones - CIC")
-        st.write("Visualización de planillas digitalizadas y priorización de casos.")
+        st.title("🏥 Panel de Gestión - CIC (Acceso Restringido)")
         
         if os.path.isfile(ARCHIVO_SENSIBLE) and os.path.isfile(ARCHIVO_ESTADISTICO):
             # Leemos las bases de datos separadas
             df_sensible = pd.read_csv(ARCHIVO_SENSIBLE)
             df_estadistico = pd.read_csv(ARCHIVO_ESTADISTICO)
             
-            # El CIC une los datos internamente para ver todo completo
-            df = pd.merge(df_sensible, df_estadistico, on=["ID_Registro", "Estado_Triaje"])
+            # El sistema del CIC "cruza" internamente la información usando el ID único para que el oftalmólogo vea todo
+            df_completo = pd.merge(df_sensible, df_estadistico, on=["ID_Registro", "Estado_Triaje"])
             
-            st.subheader("Métricas de Tamizaje")
+            st.subheader("Métricas Generales")
             col1, col2, col3 = st.columns(3)
-            
-            total_evaluados = len(df)
-            casos_sospechosos = len(df[df["Estado_Triaje"] == "🔴 Caso Sospechoso - Derivar"])
-            usan_anteojos = len(df[df["Usa_Anteojos"] == "SI"])
-
-            col1.metric("Total Evaluados", total_evaluados)
-            col2.metric("Casos a Derivar", casos_sospechosos)
-            col3.metric("Uso de Anteojos", usan_anteojos)
+            col1.metric("Total Evaluados", len(df_completo))
+            col2.metric("Casos a Derivar", len(df_completo[df_completo["Estado_Triaje"] == "🔴 Caso Sospechoso - Derivar"]))
+            col3.metric("Escuelas Evaluadas", df_completo["Escuela"].nunique())
 
             st.divider()
+            st.subheader("Base de Datos Consolidada (Confidencial)")
+            st.dataframe(df_completo.sort_values(by="Estado_Triaje"), use_container_width=True)
             
-            st.subheader("Base de Datos - Pacientes Evaluados (Confidencial)")
-            st.dataframe(df.sort_values(by="Estado_Triaje"), use_container_width=True)
-            
+            # Muestra de la tabla anónima para ejemplificar en la presentación
             with st.expander("Ver Base de Datos Estadística (Lo que se usaría para informes epidemiológicos)"):
                 st.write("Esta tabla no contiene Nombres ni DNI. Se vincula mediante el `ID_Registro`.")
                 st.dataframe(df_estadistico)
                 
+            # Muestra de la tabla de telemetría
             if os.path.isfile(ARCHIVO_TELEMETRIA):
                 with st.expander("Ver Resultados de Telemetría (Rendimiento UX/UI)"):
-                    st.write("Datos de telemetría invisibles para el docente:")
                     df_telemetria = pd.read_csv(ARCHIVO_TELEMETRIA)
                     st.dataframe(df_telemetria)
-            
         else:
             st.info("Aún no se han cargado planillas.")
