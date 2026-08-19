@@ -43,7 +43,7 @@ def mostrar_cartel_resultado(estado_triaje, agudeza):
     if st.button("OK - Cargar nuevo alumno", type="primary", use_container_width=True):
         st.rerun()
 
-# --- 3. PANTALLAS DE INICIO DE SESIÓN (SOLO CONTRASEÑA) ---
+# --- 3. PANTALLAS DE INICIO DE SESIÓN ---
 if not st.session_state.conectado:
     
     # 3.A: Pantalla principal de selección de perfil
@@ -72,7 +72,7 @@ if not st.session_state.conectado:
                 st.session_state.perfil_seleccionado = "Personal del CIC"
                 st.rerun()
                 
-    # 3.B: Pantalla de ingreso de contraseña (Aparece al hacer clic en un botón)
+    # 3.B: Pantalla de ingreso de contraseña
     else:
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
@@ -103,7 +103,12 @@ if not st.session_state.conectado:
                         st.error("⚠️ Contraseña incorrecta. Verifique sus datos.")
             
             st.divider()
-            st.info("💡 **Datos de acceso:**\n- **Docente:** Clave: `1234`\n- **CIC:** Clave: `admin`")
+            
+            # --- LÓGICA DEL CARTEL DINÁMICO ---
+            if st.session_state.perfil_seleccionado == "Docente":
+                st.info("💡 **Datos de acceso:**\n- Clave autorizada: `1234`")
+            elif st.session_state.perfil_seleccionado == "Personal del CIC":
+                st.info("💡 **Datos de acceso:**\n- Clave autorizada: `admin`")
 
 # --- 4. SISTEMA PRINCIPAL ---
 else:
