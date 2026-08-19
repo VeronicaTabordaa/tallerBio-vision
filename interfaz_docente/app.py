@@ -20,6 +20,9 @@ if "rol" not in st.session_state:
     st.session_state.rol = None
 if "form_key" not in st.session_state:
     st.session_state.form_key = 1
+# Variable para manejar la pantalla de selección de los botones grandes
+if "perfil_seleccionado" not in st.session_state:
+    st.session_state.perfil_seleccionado = None
 
 # Variables para la Telemetría
 if "tiempo_inicio" not in st.session_state:
@@ -40,33 +43,67 @@ def mostrar_cartel_resultado(estado_triaje, agudeza):
     if st.button("OK - Cargar nuevo alumno", type="primary", use_container_width=True):
         st.rerun()
 
-# --- 3. PANTALLA DE INICIO DE SESIÓN ---
+# --- 3. PANTALLAS DE INICIO DE SESIÓN (SOLO CONTRASEÑA) ---
 if not st.session_state.conectado:
-    col1, col2, col3 = st.columns([1, 2, 1])
     
-    with col2:
-        st.title("🔐 Acceso al Sistema")
-        st.markdown("Plataforma **Visión de Futuro**")
+    # 3.A: Pantalla principal de selección de perfil
+    if st.session_state.perfil_seleccionado is None:
+        st.write("")
+        st.markdown("<h1 style='text-align: center;'>Plataforma Visión de Futuro</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: gray; font-size: 18px;'>Sistema de Tamizaje Visual y Derivación Segura</p>", unsafe_allow_html=True)
+        st.write("")
+        st.write("")
         
-        tipo_perfil = st.selectbox("Seleccione su perfil de ingreso:", ["Docente", "Personal del CIC"])
-        usuario = st.text_input("Usuario:")
-        contrasena = st.text_input("Contraseña:", type="password")
+        # Columnas (Perfil Escolar - Escudo - Perfil Médico)
+        col_doc, col_escudo, col_med = st.columns([2, 1, 2])
         
-        if st.button("Iniciar Sesión", use_container_width=True):
-            if tipo_perfil == "Docente" and usuario == "docente" and contrasena == "1234":
-                st.session_state.conectado = True
-                st.session_state.rol = "Docente"
-                st.session_state.tiempo_inicio = time.time() # Inicia el reloj al entrar
+        with col_doc:
+            st.info("👩‍🏫 **PERFIL ESCOLAR AUTORIZADO**")
+            if st.button("Ingresar como Docente", use_container_width=True):
+                st.session_state.perfil_seleccionado = "Docente"
                 st.rerun()
-            elif tipo_perfil == "Personal del CIC" and usuario == "cic" and contrasena == "admin":
-                st.session_state.conectado = True
-                st.session_state.rol = "CIC"
+                
+        with col_escudo:
+            st.markdown("<h1 style='text-align: center; font-size: 60px;'>🛡️</h1>", unsafe_allow_html=True)
+            
+        with col_med:
+            st.success("👨‍⚕️ **PERFIL MÉDICO AUTORIZADO**")
+            if st.button("Ingresar como Personal CIC", use_container_width=True):
+                st.session_state.perfil_seleccionado = "Personal del CIC"
                 st.rerun()
-            else:
-                st.error("⚠️ Usuario o contraseña incorrectos. Verifique sus datos.")
-        
-        st.divider()
-        st.info("💡 **Datos de acceso:**\n- **Docente:** Usuario: `docente` | Clave: `1234`\n- **CIC:** Usuario: `cic` | Clave: `admin`")
+                
+    # 3.B: Pantalla de ingreso de contraseña (Aparece al hacer clic en un botón)
+    else:
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.title(f"🔐 Acceso: {st.session_state.perfil_seleccionado}")
+            
+            # Solo pedimos la contraseña
+            contrasena = st.text_input("Ingrese su contraseña:", type="password")
+            
+            # Botones en paralelo para Volver o Iniciar Sesión
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                if st.button("⬅️ Volver a los perfiles", use_container_width=True):
+                    st.session_state.perfil_seleccionado = None
+                    st.rerun()
+            with col_btn2:
+                if st.button("Iniciar Sesión", type="primary", use_container_width=True):
+                    # Validamos únicamente la contraseña según el perfil seleccionado
+                    if st.session_state.perfil_seleccionado == "Docente" and contrasena == "1234":
+                        st.session_state.conectado = True
+                        st.session_state.rol = "Docente"
+                        st.session_state.tiempo_inicio = time.time() # Inicia el reloj al entrar
+                        st.rerun()
+                    elif st.session_state.perfil_seleccionado == "Personal del CIC" and contrasena == "admin":
+                        st.session_state.conectado = True
+                        st.session_state.rol = "CIC"
+                        st.rerun()
+                    else:
+                        st.error("⚠️ Contraseña incorrecta. Verifique sus datos.")
+            
+            st.divider()
+            st.info("💡 **Datos de acceso:**\n- **Docente:** Clave: `1234`\n- **CIC:** Clave: `admin`")
 
 # --- 4. SISTEMA PRINCIPAL ---
 else:
@@ -76,6 +113,7 @@ else:
     if st.sidebar.button("Cerrar Sesión"):
         st.session_state.conectado = False
         st.session_state.rol = None
+        st.session_state.perfil_seleccionado = None # Resetea la selección al salir
         st.rerun()
 
     # -----------------------------------------
@@ -92,7 +130,7 @@ else:
                 nombre = st.text_input("Nombre:")
                 dni = st.text_input("DNI:")
                 fecha_nac = st.date_input("Fecha de Nac:", format="DD/MM/YYYY")
-                escuela = st.text_input("Institución Escolar:") # Campo agregado para estadística
+                escuela = st.text_input("Institución Escolar:")
             with col2:
                 apellido = st.text_input("Apellido:")
                 edad = st.number_input("Edad:", min_value=4, max_value=20, value=6, step=1)
@@ -134,13 +172,12 @@ else:
             if enviado:
                 if nombre == "" or apellido == "" or dni == "" or escuela == "":
                     st.warning("⚠️ Por favor, complete al menos Nombre, Apellido, DNI e Institución Escolar.")
-                    st.session_state.errores_carga += 1 # Suma error por intento fallido en modo invisible
+                    st.session_state.errores_carga += 1
                 else:
                     # --- VALIDACIÓN: BLOQUEO DE DUPLICADOS CON DERIVACIÓN ---
                     carga_permitida = True
                     if os.path.isfile(ARCHIVO_SENSIBLE):
                         df_existente = pd.read_csv(ARCHIVO_SENSIBLE)
-                        # Filtramos buscando el mismo DNI en el archivo de datos sensibles
                         registros_previos = df_existente[df_existente["DNI"].astype(str).str.strip() == str(dni).strip()]
                         
                         if not registros_previos.empty:
@@ -149,7 +186,7 @@ else:
                     
                     if not carga_permitida:
                         st.error("⛔ Operación denegada: Este alumno ya se encuentra registrado con una derivación pendiente en el CIC. No es necesario volver a cargarlo.")
-                        st.session_state.errores_carga += 1 # Suma error por intentar duplicar en modo invisible
+                        st.session_state.errores_carga += 1
                     else:
                         # --- LÓGICA DE TRIAJE Y GUARDADO ---
                         valores_testeados = []
@@ -220,42 +257,48 @@ else:
                         st.session_state.tiempo_inicio = time.time()
                         st.session_state.errores_carga = 0
                         
-                        # Llamamos al cartel sin pasarle los datos de telemetría para que no los muestre
                         mostrar_cartel_resultado(estado, peor_vision)
 
-# -----------------------------------------
+    # -----------------------------------------
     # VISTA OFTALMÓLOGO (CIC)
     # -----------------------------------------
     elif st.session_state.rol == "CIC":
-        st.title("🏥 Panel de Gestión - CIC (Acceso Restringido)")
+        st.title("🏥 Panel de Gestión y Derivaciones - CIC")
+        st.write("Visualización de planillas digitalizadas y priorización de casos.")
         
         if os.path.isfile(ARCHIVO_SENSIBLE) and os.path.isfile(ARCHIVO_ESTADISTICO):
             # Leemos las bases de datos separadas
             df_sensible = pd.read_csv(ARCHIVO_SENSIBLE)
             df_estadistico = pd.read_csv(ARCHIVO_ESTADISTICO)
             
-            # El sistema del CIC "cruza" internamente la información usando el ID único para que el oftalmólogo vea todo
-            df_completo = pd.merge(df_sensible, df_estadistico, on=["ID_Registro", "Estado_Triaje"])
+            # El CIC une los datos internamente para ver todo completo
+            df = pd.merge(df_sensible, df_estadistico, on=["ID_Registro", "Estado_Triaje"])
             
-            st.subheader("Métricas Generales")
+            st.subheader("Métricas de Tamizaje")
             col1, col2, col3 = st.columns(3)
-            col1.metric("Total Evaluados", len(df_completo))
-            col2.metric("Casos a Derivar", len(df_completo[df_completo["Estado_Triaje"] == "🔴 Caso Sospechoso - Derivar"]))
-            col3.metric("Escuelas Evaluadas", df_completo["Escuela"].nunique())
+            
+            total_evaluados = len(df)
+            casos_sospechosos = len(df[df["Estado_Triaje"] == "🔴 Caso Sospechoso - Derivar"])
+            usan_anteojos = len(df[df["Usa_Anteojos"] == "SI"])
+
+            col1.metric("Total Evaluados", total_evaluados)
+            col2.metric("Casos a Derivar", casos_sospechosos)
+            col3.metric("Uso de Anteojos", usan_anteojos)
 
             st.divider()
-            st.subheader("Base de Datos Consolidada (Confidencial)")
-            st.dataframe(df_completo.sort_values(by="Estado_Triaje"), use_container_width=True)
             
-            # Muestra de la tabla anónima para ejemplificar en la presentación
+            st.subheader("Base de Datos - Pacientes Evaluados (Confidencial)")
+            st.dataframe(df.sort_values(by="Estado_Triaje"), use_container_width=True)
+            
             with st.expander("Ver Base de Datos Estadística (Lo que se usaría para informes epidemiológicos)"):
                 st.write("Esta tabla no contiene Nombres ni DNI. Se vincula mediante el `ID_Registro`.")
                 st.dataframe(df_estadistico)
                 
-            # Muestra de la tabla de telemetría
             if os.path.isfile(ARCHIVO_TELEMETRIA):
                 with st.expander("Ver Resultados de Telemetría (Rendimiento UX/UI)"):
+                    st.write("Datos de telemetría invisibles para el docente:")
                     df_telemetria = pd.read_csv(ARCHIVO_TELEMETRIA)
                     st.dataframe(df_telemetria)
+            
         else:
             st.info("Aún no se han cargado planillas.")
