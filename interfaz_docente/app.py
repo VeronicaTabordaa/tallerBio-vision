@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 import time
 import uuid
+import re
 
 # Configuración de la página
 st.set_page_config(page_title="Visión de Futuro", layout="wide")
@@ -175,22 +176,37 @@ else:
             enviado = st.form_submit_button("Guardar y Evaluar")
 
             if enviado:
-                if nombre == "" or apellido == "" or dni == "" or escuela == "":
+            # Patrones de validación
+                patron_nombre = r'^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$'   # solo letras y espacios
+                patron_dni = r'^\d+$'                              # solo números
+
+                campos_vacios = nombre == "" or apellido == "" or dni == "" or escuela == ""
+                nombre_invalido = not campos_vacios and not re.match(patron_nombre, nombre)
+                apellido_invalido = not campos_vacios and not re.match(patron_nombre, apellido)
+                dni_invalido = not campos_vacios and not re.match(patron_dni, dni)
+
+                if campos_vacios:
                     st.warning("⚠️ Por favor, complete al menos Nombre, Apellido, DNI e Institución Escolar.")
                     st.session_state.errores_carga += 1
+                elif nombre_invalido or apellido_invalido:
+                    st.warning("⚠️ Nombre y Apellido solo pueden contener letras.")
+                    st.session_state.errores_carga += 1
+                elif dni_invalido:
+                    st.warning("⚠️ El DNI solo puede contener números.")
+                    st.session_state.errores_carga += 1
                 else:
-                    # --- VALIDACIÓN: BLOQUEO DE DUPLICADOS CON DERIVACIÓN ---
+                # --- VALIDACIÓN: BLOQUEO DE DUPLICADOS CON DERIVACIÓN ---
                     carga_permitida = True
                     if os.path.isfile(ARCHIVO_SENSIBLE):
                         df_existente = pd.read_csv(ARCHIVO_SENSIBLE)
                         registros_previos = df_existente[df_existente["DNI"].astype(str).str.strip() == str(dni).strip()]
-                        
+            
                         if not registros_previos.empty:
                             if "🔴 Caso Sospechoso - Derivar" in registros_previos["Estado_Triaje"].values:
                                 carga_permitida = False
-                    
+        
                     if not carga_permitida:
-                        st.error("⛔ Operación denegada: Este alumno ya se encuentra registrado con una derivación pendiente en el CIC. No es necesario volver a cargarlo.")
+                        st.error("⛔ Operación denegada: ...")
                         st.session_state.errores_carga += 1
                     else:
                         # --- LÓGICA DE TRIAJE Y GUARDADO ---
