@@ -138,7 +138,7 @@ else:
                 escuela = st.text_input("Institución Escolar:")
             with col2:
                 apellido = st.text_input("Apellido:")
-                edad = st.number_input("Edad:", min_value=4, max_value=20, value=6, step=1)
+                edad = st.number_input("Edad:", min_value=5, max_value=12, value=6, step=1)
                 direccion = st.text_input("Dirección:")
 
             st.subheader("Agudeza Visual")
@@ -149,9 +149,9 @@ else:
                 st.markdown("**Sin Corrección**")
                 col_sc1, col_sc2 = st.columns(2)
                 with col_sc1:
-                    od_sc = st.number_input("OD (Sin Correc.):", min_value=0, max_value=10, value=10)
+                    od_sc = st.number_input("OD (Sin Correc.):", min_value=1, max_value=10, value=10)
                 with col_sc2:
-                    oi_sc = st.number_input("OI (Sin Correc.):", min_value=0, max_value=10, value=10)
+                    oi_sc = st.number_input("OI (Sin Correc.):", min_value=1, max_value=10, value=10)
             
             with col_cc:
                 st.markdown("**Con Corrección (Lentes)**")
