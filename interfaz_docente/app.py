@@ -178,7 +178,7 @@ else:
             if enviado:
             # Patrones de validación
                 patron_nombre = r'^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$'   # solo letras y espacios
-                patron_dni = r'^\d+$'                              # solo números
+                patron_dni = r'^\d{8,}$'                         # solo números y minimo 8
 
                 campos_vacios = nombre == "" or apellido == "" or dni == "" or escuela == ""
                 nombre_invalido = not campos_vacios and not re.match(patron_nombre, nombre)
@@ -192,7 +192,7 @@ else:
                     st.warning("⚠️ Nombre y Apellido solo pueden contener letras.")
                     st.session_state.errores_carga += 1
                 elif dni_invalido:
-                    st.warning("⚠️ El DNI solo puede contener números.")
+                    st.warning("⚠️ El DNI solo puede contener números y tener al menos 8 dígitos.")
                     st.session_state.errores_carga += 1
                 else:
                 # --- VALIDACIÓN: BLOQUEO DE DUPLICADOS CON DERIVACIÓN ---
